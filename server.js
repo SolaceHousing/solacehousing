@@ -108,6 +108,45 @@
   }
   console.log('Update 7 applied.');
 })();
+// Update 8: "Our policies" section on the Charter of Rights page (PDFs in public/policies) and policy links in the footer
+(() => {
+  const fs = require('fs'), path = require('path');
+  const swap = (file, from, to) => {
+    const fp = path.join(__dirname, file);
+    if (!fs.existsSync(fp)) return;
+    const s = fs.readFileSync(fp, 'utf8');
+    if (s.includes(from)) fs.writeFileSync(fp, s.split(from).join(to)); else console.warn('Update 8 skipped a changed file: ' + file);
+  };
+  swap('views/charter.ejs', "<%- include('partials/faqs', { page: 'Tenants (Charter page)'", `<section class="section bg-mist" id="policies">
+  <div class="wrap">
+    <div class="sec-head"><div data-reveal><span class="eyebrow">Policies</span><h2>Our Policies</h2><p class="lead">Solace Housing is committed to transparency. Our key policies are below. For any other policy, contact us on <a href="tel:08009991870" style="color:inherit;font-weight:700;white-space:nowrap">0800 999 1870</a> or <a href="mailto:info@solacehousing.co.uk" style="color:inherit;font-weight:700">info@solacehousing.co.uk</a>.</p></div></div>
+    <div class="grid g2">
+    <% [
+      ['Privacy Notice', 'privacy-notice.pdf', 'How we collect and use personal information'],
+      ['Cookie Notice', 'cookie-notice.pdf', 'How our website uses cookies'],
+      ['Complaints Policy', 'complaints-policy.pdf', 'How to make a complaint and what happens next'],
+      ['Safeguarding Policy', 'safeguarding-policy.pdf', 'How we protect residents from abuse and neglect'],
+      ['Data Protection Policy', 'data-protection-policy.pdf', 'How we keep personal data safe'],
+      ['Modern Slavery Statement', 'modern-slavery-statement.pdf', 'Our commitment to preventing modern slavery'],
+      ['Equal Opportunities Policy', 'equal-opportunities-policy.pdf', 'Our commitment to equality and fair treatment'],
+    ].forEach(function(p, i){ %>
+      <a class="doc policy" href="/policies/<%= p[1] %>" target="_blank" rel="noopener" data-reveal style="--i:<%= i % 2 %>">
+        <span class="ic"><svg><use href="#i-file"/></svg></span>
+        <div><h4><%= p[0] %></h4><p><%= p[2] %></p></div>
+        <span class="dl txt"><svg><use href="#i-download"/></svg>Download PDF</span>
+      </a>
+    <% }) %>
+    </div>
+  </div>
+</section>
+<%- include('partials/faqs', { page: 'Tenants (Charter page)'`);
+  swap('views/partials/footer.ejs', '<span><a href="/privacy">Privacy</a>', '<span><a href="/charter-of-rights#policies">Policies</a> · <a href="/policies/privacy-notice.pdf" target="_blank" rel="noopener">Privacy Notice</a> · <a href="/policies/cookie-notice.pdf" target="_blank" rel="noopener">Cookie Notice</a> · <a href="/privacy">Privacy</a>');
+  swap('views/partials/header.ejs', '/css/site.css?v=8"', '/css/site.css?v=9"');
+  const css = path.join(__dirname, 'public/css/site.css');
+  if (fs.existsSync(css) && !fs.readFileSync(css, 'utf8').includes('.doc .dl.txt')) {
+    fs.appendFileSync(css, '\n/* Policies: "Download PDF" label on document cards */\n.doc .dl.txt { width: auto; padding: 0 14px; gap: 8px; display: inline-flex; align-items: center; font-family: var(--font-h); font-weight: 600; font-size: .82rem; white-space: nowrap; }\n.doc .dl.txt svg { width: 16px; height: 16px; }\n@media (max-width: 480px) { .doc.policy { flex-wrap: wrap; } .doc.policy > div { flex: 1 1 calc(100% - 72px); min-width: 0; } .doc.policy .dl.txt { margin-left: 72px; height: 38px; } }\n');
+  }
+})();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
