@@ -108,7 +108,7 @@
   }
   console.log('Update 7 applied.');
 })();
-// Update 8: "Our policies" section on the Charter of Rights page (PDFs in public/policies) and policy links in the footer
+// Update 8: "Our Policies" page at /policies (PDFs in public/policies), a pointer to it on the Charter of Rights page, and policy links in the footer
 (() => {
   const fs = require('fs'), path = require('path');
   const swap = (file, from, to) => {
@@ -117,9 +117,10 @@
     const s = fs.readFileSync(fp, 'utf8');
     if (s.includes(from)) fs.writeFileSync(fp, s.split(from).join(to)); else console.warn('Update 8 skipped a changed file: ' + file);
   };
-  swap('views/charter.ejs', "<%- include('partials/faqs', { page: 'Tenants (Charter page)'", `<section class="section bg-mist" id="policies">
+  fs.writeFileSync(path.join(__dirname, 'views/policies.ejs'), `<%- include('partials/header') %>
+<section class="page-hero"><div class="wrap"><div class="hero-inner"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span>Policies</nav><h1 data-split>Our Policies</h1><p class="lead">Solace Housing is committed to transparency. Our key policies are below. For any other policy, contact us on <a href="tel:08009991870" style="color:inherit;font-weight:700;white-space:nowrap">0800 999 1870</a> or <a href="mailto:info@solacehousing.co.uk" style="color:inherit;font-weight:700">info@solacehousing.co.uk</a>.</p></div></div></section>
+<section class="section">
   <div class="wrap">
-    <div class="sec-head"><div data-reveal><span class="eyebrow">Policies</span><h2>Our Policies</h2><p class="lead">Solace Housing is committed to transparency. Our key policies are below. For any other policy, contact us on <a href="tel:08009991870" style="color:inherit;font-weight:700;white-space:nowrap">0800 999 1870</a> or <a href="mailto:info@solacehousing.co.uk" style="color:inherit;font-weight:700">info@solacehousing.co.uk</a>.</p></div></div>
     <div class="grid g2">
     <% [
       ['Privacy Notice', 'privacy-notice.pdf', 'How we collect and use personal information'],
@@ -139,8 +140,10 @@
     </div>
   </div>
 </section>
-<%- include('partials/faqs', { page: 'Tenants (Charter page)'`);
-  swap('views/partials/footer.ejs', '<span><a href="/privacy">Privacy</a>', '<span><a href="/charter-of-rights#policies">Policies</a> · <a href="/policies/privacy-notice.pdf" target="_blank" rel="noopener">Privacy Notice</a> · <a href="/policies/cookie-notice.pdf" target="_blank" rel="noopener">Cookie Notice</a> · <a href="/privacy">Privacy</a>');
+<%- include('partials/footer') %>
+`);
+  swap('views/charter.ejs', 'complaints process</a>.</p></div></div>', 'complaints process</a>.</p></div></div>\n    <div class="notice info" style="margin-top:20px" data-reveal><svg><use href="#i-file"/></svg><div><h4>Looking for our policies?</h4><p>See <a href="/policies" style="color:inherit;font-weight:700">all our policies</a>, including safeguarding, complaints, privacy and data protection.</p></div></div>');
+  swap('views/partials/footer.ejs', '<span><a href="/privacy">Privacy</a>', '<span><a href="/policies">Policies</a> · <a href="/policies/privacy-notice.pdf" target="_blank" rel="noopener">Privacy Notice</a> · <a href="/policies/cookie-notice.pdf" target="_blank" rel="noopener">Cookie Notice</a> · <a href="/privacy">Privacy</a>');
   swap('views/partials/header.ejs', '/css/site.css?v=8"', '/css/site.css?v=9"');
   const css = path.join(__dirname, 'public/css/site.css');
   if (fs.existsSync(css) && !fs.readFileSync(css, 'utf8').includes('.doc .dl.txt')) {
@@ -177,7 +180,8 @@ app.use(express.json({ limit: '2mb' }));
 // Files sent in through public forms (repair photos, referrals) are only visible to logged-in staff
 app.use('/uploads/private', (req, res, next) => (req.session && req.session.uid ? next() : res.status(404).send('Not found')));
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d', index: false }));
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d' }));
+// redirect: false so /policies reaches its page route instead of redirecting to the public/policies folder
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1d', redirect: false }));
 app.use((req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Referrer-Policy', 'strict-origin-when-cross-origin'); next(); });
 
 // ---------- Private uploads from public forms ----------
@@ -443,10 +447,11 @@ app.post('/contact', guard, (req, res) => {
 });
 app.get('/documents', (req, res) => render(res, 'documents', { meta: { title: 'Documents & downloads' }, documents: Items.list('documents').filter((d) => d.file) }));
 app.get('/privacy', (req, res) => render(res, 'privacy', { meta: { title: 'Privacy policy' } }));
+app.get('/policies', (req, res) => render(res, 'policies', { meta: { title: 'Our Policies' } }));
 
 app.get('/robots.txt', (req, res) => res.type('text').send(`User-agent: *\nDisallow: /admin\nSitemap: ${baseUrl(req)}/sitemap.xml`));
 app.get('/sitemap.xml', (req, res) => {
-  const pages = ['/', '/about', '/services', '/rooms', '/referrals', '/working-together', '/repairs', '/events', '/stories', '/news', '/charter-of-rights', '/complaints', '/contact'];
+  const pages = ['/', '/about', '/services', '/rooms', '/referrals', '/working-together', '/repairs', '/events', '/stories', '/news', '/charter-of-rights', '/complaints', '/contact', '/policies'];
   const dyn = [...visibleRooms().map((r) => `/rooms/${r.slug}`), ...Items.list('events').map((e) => `/events/${e.slug}`), ...storiesPublic().map((s) => `/stories/${s.slug}`), ...Items.list('news').map((n) => `/news/${n.slug}`)];
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${[...pages, ...dyn].map((p) => `<url><loc>${baseUrl(req)}${p}</loc></url>`).join('')}</urlset>`);
 });
